@@ -20,7 +20,7 @@ public class GlassTest {
     private class GlassListener implements GlassActionListener {
 
         @Override
-        public void rowsCleared(@NotNull GlassActionEvent event, @NotNull Glass glass) {
+        public void rowsCleared(@NotNull GlassActionEvent event) {
             countEvent++;
         }
     }

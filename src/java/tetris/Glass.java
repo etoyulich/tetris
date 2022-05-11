@@ -150,7 +150,7 @@ public class Glass {
     private void fireRowsCleared() {
         for (GlassActionListener listener : glassActionListeners) {
             GlassActionEvent event = new GlassActionEvent(listener);
-            listener.rowsCleared(event, this);
+            listener.rowsCleared(event);
         }
     }
 

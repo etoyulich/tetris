@@ -1,9 +1,5 @@
 package tetris;
 
-import event.GlassActionEvent;
-import event.GlassActionListener;
-import org.jetbrains.annotations.NotNull;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,9 +27,6 @@ public class Glass {
     private final HashMap<Point, Cell> cells = new HashMap<>();
 
     public Cell cell(Point pos) {
-//        if(!cells.containsKey(pos)){
-//            System.out.println(pos);
-//        }
         return cells.get(pos);
     }
 
@@ -42,7 +35,6 @@ public class Glass {
     }
 
     // ---------------------------- Порождение ---------------------
-
 
     public Glass(int height, int width) {
         if (height < 1 || width < 1) {
@@ -115,20 +107,29 @@ public class Glass {
     void moveRows() {
         int filledRows = getFilledRows();
         if (filledRows != 0) {
-            for (int y = 0; y < getHeight(); y++) {
+            for (int y = getHeight() - 1; y >= 0; y--) {
                 if(isRowFilled(y)){
-                    for (int y1 = y; y1 < getHeight() - 1; y1++) {
-                        for (int x = 0; x < getWidth(); x++) {
-                            cell(x, y1).clearCell();
-                            if (!cell(x, y1 + 1).isEmpty()) {
-                                cell(x, y1 + 1).getPiece().fillCell(cell(x, y1));
-                            }
-                        }
-                    }
-                    y--;
+                    clearRow(y);
+                    shiftRows(y);
                 }
             }
-            fireRowsCleared();
+        }
+    }
+
+    private void shiftRows(int rowIndex){
+        for (int y = rowIndex; y < getHeight(); y++) {
+            for (int x = 0; x < getWidth(); x++) {
+                if (!cell(x, y + 1).isEmpty()) {
+                    cell(x, y + 1).getPiece().fillCell(cell(x, y));
+                }
+            }
+        }
+    }
+
+    private void clearRow(int y){
+        List<Cell> cells = getRow(y);
+        for (Cell cell : cells) {
+            cell.clearCell();
         }
     }
 
@@ -141,17 +142,8 @@ public class Glass {
         return isRowFilled;
     }
 
-    private final ArrayList<GlassActionListener> glassActionListeners = new ArrayList<>();
-
-    public void addGlassActionListener(@NotNull GlassActionListener listener) {
-        glassActionListeners.add(listener);
-    }
-
-    private void fireRowsCleared() {
-        for (GlassActionListener listener : glassActionListeners) {
-            GlassActionEvent event = new GlassActionEvent(listener);
-            listener.rowsCleared(event);
-        }
+    public boolean containsCoordinate(Point coordinate){
+        return !(coordinate.getX() >= width) && !(coordinate.getX() < 0) && !(coordinate.getY() >= height + cellsForShape) && !(coordinate.getY() < 0);
     }
 
     @Override

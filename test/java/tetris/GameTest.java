@@ -5,6 +5,7 @@ import event.GameActionListener;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tetris.shapes.AbstractShape;
 
 import java.awt.*;
 
@@ -15,7 +16,6 @@ public class GameTest {
     private GameModel gameModel;
     private int countScoresUpdated = 0;
     private int countGameIsOver = 0;
-    private int countShapeIsUpd = 0;
     private int countNextShapeUpd = 0;
 
     private class GameModelListener implements GameActionListener{
@@ -25,10 +25,6 @@ public class GameTest {
             countScoresUpdated++;
         }
 
-        @Override
-        public void shapeIsUpdated(@NotNull GameActionEvent event, @NotNull Shape shape) {
-            countShapeIsUpd++;
-        }
 
         @Override
         public void gameIsOver(@NotNull GameActionEvent event) {
@@ -36,7 +32,7 @@ public class GameTest {
         }
 
         @Override
-        public void nextShapeUpdated(@NotNull GameActionEvent event, @NotNull Shape shape) {
+        public void nextShapeUpdated(@NotNull GameActionEvent event, @NotNull AbstractShape shape) {
             countNextShapeUpd++;
         }
     }
@@ -45,7 +41,6 @@ public class GameTest {
     public void testSetup() {
         countScoresUpdated = 0;
         countGameIsOver = 0;
-        countShapeIsUpd = 0;
         countNextShapeUpd = 0;
         gameModel = new GameModel(4, 6, new GameModelListener());
     }
@@ -64,12 +59,10 @@ public class GameTest {
             canMove = gameModel.makeOneStep();
         }while (canMove);
 
-        int expScoresUpdated = 1;
         int expGameIsOver = 1;
-        assertEquals(expScoresUpdated, countScoresUpdated);
+        assertTrue(countScoresUpdated >= 1);
         assertEquals(expGameIsOver, countGameIsOver);
-        assertTrue(countShapeIsUpd >= 2);
-        assertTrue(countNextShapeUpd >= 2);
+        assertTrue(countNextShapeUpd >= 1);
         assertEquals(expPoints, gameModel.getPoints());
     }
 
@@ -87,7 +80,6 @@ public class GameTest {
         int expGameIsOver = 1;
         assertEquals(expScoresUpdated, countScoresUpdated);
         assertEquals(expGameIsOver, countGameIsOver);
-        assertTrue(countShapeIsUpd >= 2);
         assertTrue(countNextShapeUpd >= 2);
         assertEquals(expPoints, gameModel.getPoints());
     }

@@ -1,6 +1,10 @@
 package tetris;
 
+import event.*;
+import org.jetbrains.annotations.NotNull;
+
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -20,10 +24,12 @@ public class Cell {
     private Piece piece;
 
 
-    void setPiece(Piece piece) {
+    public void setPiece(Piece piece) {
         if(this.piece == null){
-            piece.setCell(this);
+            Cell tmp = this;
             this.piece = piece;
+            piece.setCell(tmp);
+            fireCellFilled();
         }
     }
 
@@ -32,6 +38,7 @@ public class Cell {
             Piece tmp = piece;
             this.piece = null;
             tmp.freeCell();
+            fireCellCleared();
         }
     }
 
@@ -78,5 +85,25 @@ public class Cell {
     @Override
     public int hashCode() {
         return Objects.hash(position, piece, _neighbors);
+    }
+
+    private final ArrayList<CellActionListener> cellActionListener = new ArrayList<>();
+
+    public void addCellActionListener(@NotNull CellActionListener listener){
+        cellActionListener.add(listener);
+    }
+
+    private void fireCellCleared(){
+        for (CellActionListener listener : cellActionListener) {
+            CellActionEvent event = new CellActionEvent(listener);
+            listener.cellCleared(event, this);
+        }
+    }
+
+    private void fireCellFilled(){
+        for (CellActionListener listener : cellActionListener) {
+            CellActionEvent event = new CellActionEvent(listener);
+            listener.cellFilled(event, this);
+        }
     }
 }

@@ -1,7 +1,7 @@
 package tetris;
 
-import event.GlassActionEvent;
-import event.GlassActionListener;
+import event.CellActionEvent;
+import event.CellActionListener;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,24 +15,40 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class GlassTest {
 
     private Glass glass;
-    private int countEvent = 0;
+    private int countClear = 0;
+    private int countFill = 0;
 
-    private class GlassListener implements GlassActionListener {
+    private class CellListener implements CellActionListener {
 
         @Override
-        public void rowsCleared(@NotNull GlassActionEvent event) {
-            countEvent++;
+        public void cellCleared(@NotNull CellActionEvent event, @NotNull Cell cell) {
+            countClear++;
+        }
+
+        @Override
+        public void cellFilled(@NotNull CellActionEvent event, @NotNull Cell cell) {
+            countFill++;
         }
     }
 
     @BeforeEach
     public void testSetup() {
         glass = new Glass(2, 2);
-        countEvent = 0;
+        countClear = 0;
+        countFill = 0;
+    }
+
+    private void addListener(){
+        for (int y = 0; y < glass.getHeight(); y++) {
+            for (int x = 0; x < glass.getWidth(); x++) {
+                glass.cell(x, y).addCellActionListener(new CellListener());
+            }
+        }
     }
 
     @Test
     public void test_create_withCorrectParams() {
+        addListener();
         Cell cell_0_0 = glass.cell(new Point(0, 0));
         Cell cell_0_1 = glass.cell(new Point(1, 0));
         Cell cell_1_0 = glass.cell(new Point(0, 1));
@@ -46,6 +62,10 @@ public class GlassTest {
         assertTrue(cell_1_0.isNeighbor(cell_1_1));
         assertTrue(cell_0_1.isNeighbor(cell_0_0));
         assertTrue(cell_1_1.isNeighbor(cell_1_0));
+
+        int expCount = 0;
+        assertEquals(expCount, countClear);
+        assertEquals(expCount, countFill);
     }
 
     @Test
@@ -70,7 +90,7 @@ public class GlassTest {
 
     @Test
     public void test_getFilledRows_NoFilledRows() {
-        glass.addGlassActionListener(new GlassListener());
+        addListener();
         Glass expGlass = new Glass(2, 2);
         int real = glass.getFilledRows();
         int expected = 0;
@@ -78,14 +98,15 @@ public class GlassTest {
 
         assertEquals(expected, real);
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expCount, countClear);
+        assertEquals(expCount, countFill);
     }
 
     @Test
     public void test_getFilledRows_SeveralFilledCellsNoRows() {
-        glass.addGlassActionListener(new GlassListener());
         Glass expGlass = new Glass(4, 4);
         glass = new Glass(4, 4);
+        addListener();
 
         glass.cell(0, 0).setPiece(new Piece(Color.WHITE));
         glass.cell(0, 2).setPiece(new Piece(Color.BLACK));
@@ -97,16 +118,19 @@ public class GlassTest {
 
         int real = glass.getFilledRows();
         int expected = 0;
-        int expCount = 0;
+        int expClear = 0;
+        int expFill = 3;
 
         assertEquals(expected, real);
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
 
     @Test
     public void test_getFilledRows_OneFilledRow() {
-        glass.addGlassActionListener(new GlassListener());
+        addListener();
         Glass expGlass = new Glass(2, 2);
         for (int i = 0; i < glass.getWidth(); i++) {
             glass.cell(i, 0).setPiece(new Piece(Color.WHITE));
@@ -115,18 +139,20 @@ public class GlassTest {
 
         int real = glass.getFilledRows();
         int expected = 1;
-        int expCount = 0;
+        int expClear = 0;
+        int expFill = 2;
 
         assertEquals(expected, real);
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
 
     @Test
     public void test_getFilledRows_SeveralFilledRows() {
         Glass expGlass = new Glass(4, 4);
         glass = new Glass(4, 4);
-        glass.addGlassActionListener(new GlassListener());
+        addListener();
         glass.cell(3, 3).setPiece(new Piece(Color.WHITE));
         expGlass.cell(3,3).setPiece(new Piece(Color.WHITE));
 
@@ -139,18 +165,20 @@ public class GlassTest {
 
         int real = glass.getFilledRows();
         int expected = 2;
-        int expCount = 0;
+        int expClear = 0;
+        int expFill = 9;
 
         assertEquals(expected, real);
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
 
     @Test
     public void test_moveRows_rowsMoved_OneFilledRow() {
         Glass expGlass = new Glass(4, 4);
         glass = new Glass(4, 4);
-        glass.addGlassActionListener(new GlassListener());
+        addListener();
 
         glass.cell(2, 1).setPiece(new Piece(Color.WHITE));
         glass.cell(2, 2).setPiece(new Piece(Color.WHITE));
@@ -163,10 +191,12 @@ public class GlassTest {
         }
 
         glass.moveRows();
-        int expCount = 1;
+        int expClear = 6;
+        int expFill = 8;
 
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
 
     @Test
@@ -177,7 +207,7 @@ public class GlassTest {
         expGlass.cell(2, 1).setPiece(new Piece(Color.WHITE));
 
         glass = new Glass(4, 4);
-        glass.addGlassActionListener(new GlassListener());
+        addListener();
         glass.cell(1, 2).setPiece(new Piece(Color.WHITE));
         glass.cell(2, 2).setPiece(new Piece(Color.BLACK));
         glass.cell(2, 3).setPiece(new Piece(Color.WHITE));
@@ -189,15 +219,18 @@ public class GlassTest {
         }
 
         glass.moveRows();
-        int expCount = 1;
+        int expClear = 14;
+        int expFill = 17;
 
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
 
     @Test
     public void test_moveRows_rowsNotMoved() {
         glass = new Glass(4, 4);
+        addListener();
         glass.cell(1, 1).setPiece(new Piece(Color.WHITE));
         glass.cell(2, 1).setPiece(new Piece(Color.BLACK));
         glass.cell(0, 2).setPiece(new Piece(Color.BLUE));
@@ -217,9 +250,22 @@ public class GlassTest {
         expGlass.cell(2, 0).setPiece(new Piece(Color.WHITE));
 
         glass.moveRows();
-        int expCount = 0;
+        int expClear = 0;
+        int expFill = 7;
 
         assertEquals(expGlass, glass);
-        assertEquals(expCount, countEvent);
+        assertEquals(expClear, countClear);
+        assertEquals(expFill, countFill);
     }
+
+    @Test
+    public void test_containsCoordinate_contains() {
+        assertTrue(glass.containsCoordinate(new Point(0, 0)));
+    }
+
+    @Test
+    public void test_containsCoordinate_notContains() {
+        assertFalse(glass.containsCoordinate(new Point(10, 10)));
+    }
+
 }

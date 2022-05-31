@@ -3,8 +3,12 @@ package tetris;
 import event.GameActionEvent;
 import event.GameActionListener;
 import org.jetbrains.annotations.NotNull;
+import tetris.shapes.AbstractShape;
+import tetris.shapes.ShapeStorage;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class GameModel {
 
@@ -22,63 +26,55 @@ public class GameModel {
     private final Glass glass;
     private final static int numberOfShapes = 2;
 
-    public Shape getCurrentShape(){
+    public AbstractShape getCurrentShape() {
         return shapes[0];
     }
 
-    private final Shape[] shapes = new Shape[numberOfShapes];
+    private final AbstractShape[] shapes = new AbstractShape[numberOfShapes];
 
+    private final ShapeStorage storage;
 
     public GameModel(int width, int height, GameActionListener l) {
         glass = new Glass(height, width);
 
-        if(l != null){
+        if (l != null) {
             addGameActionListener(l);
         }
 
+        storage = new ShapeStorage(width, height);
         shapes[0] = chooseShape();
         shapes[0].setShapeOnGlass(glass);
         shapes[1] = chooseShape();
-        fireShapeIsUpdated(shapes[0]);
-        fireNextShapeUpdated(new Shape(shapes[1]));
+        fireNextShapeUpdated(shapes[1].clone());
     }
 
     public boolean makeOneStep() {
         if (!shapes[0].move(Direction.down())) {
             scorePoints();
-            if(shapes[1].setShapeOnGlass(glass) && shapes[1].canMove(Direction.down())){
+            Point2D newCenter = new Point2D.Double(shapes[1].getRotationCenter().getX(), shapes[1].getRotationCenter().getY() - 1);
+            Map<Point2D, Piece> newPos = shapes[1].getVectors();
+            if (shapes[1].setShapeOnGlass(glass) && shapes[1].canMove(newCenter, newPos)) {
                 moveShapeQueue();
+            } else {
+                fireGameIsOver();
+                return false;
             }
-            else {
-                    fireGameIsOver();
-                    return false;
-            }
-            fireShapeIsUpdated(shapes[0]);
         }
         return true;
     }
 
-    private Shape chooseShape() {
-        int a = (int) (Math.random() * 7);
-        if (a == 0) {
-            return Shape.generateI(glass.getWidth(), glass.getHeight());
-        } else if (a == 1) {
-            return Shape.generateJ(glass.getWidth(), glass.getHeight());
-        } else if (a == 2) {
-            return Shape.generateL(glass.getWidth(), glass.getHeight());
-        } else if (a == 3) {
-            return Shape.generateO(glass.getWidth(), glass.getHeight());
-        } else if (a == 4) {
-            return Shape.generateS(glass.getWidth(), glass.getHeight());
-        } else if (a == 5) {
-            return Shape.generateT(glass.getWidth(), glass.getHeight());
-        } else {
-            return Shape.generateZ(glass.getWidth(), glass.getHeight());
+    private AbstractShape chooseShape() {
+        int id = (int) (Math.random() * storage.getStorageSize());
+        try {
+            return storage.getById(id);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
         }
+        throw new IllegalArgumentException("Невозможно найти заданную фигурку");
     }
 
     private void scorePoints() {
-        if(glass.getFilledRows() != 0){
+        if (glass.getFilledRows() != 0) {
             points += glass.getFilledRows() * 50;
             glass.moveRows();
             fireScoresUpdated();
@@ -88,7 +84,7 @@ public class GameModel {
     private void moveShapeQueue() {
         System.arraycopy(shapes, 1, shapes, 0, numberOfShapes - 1);
         shapes[numberOfShapes - 1] = chooseShape();
-        fireNextShapeUpdated(new Shape(shapes[1]));
+        fireNextShapeUpdated(shapes[1].clone());
     }
 
     //-----------------------------------------------------
@@ -98,17 +94,10 @@ public class GameModel {
         gameActionListeners.add(listener);
     }
 
-    private void fireScoresUpdated(){
+    private void fireScoresUpdated() {
         for (GameActionListener listener : gameActionListeners) {
             GameActionEvent event = new GameActionEvent(listener);
             listener.scoresUpdated(event);
-        }
-    }
-
-    private void fireShapeIsUpdated(Shape shape) {
-        for (GameActionListener listener : gameActionListeners) {
-            GameActionEvent event = new GameActionEvent(listener);
-            listener.shapeIsUpdated(event, shape);
         }
     }
 
@@ -119,11 +108,10 @@ public class GameModel {
         }
     }
 
-    private void fireNextShapeUpdated(Shape shape){
+    private void fireNextShapeUpdated(AbstractShape shape) {
         for (GameActionListener listener : gameActionListeners) {
             GameActionEvent event = new GameActionEvent(listener);
-            Shape next = new Shape(shape);
-            listener.nextShapeUpdated(event, next);
+            listener.nextShapeUpdated(event, shape);
         }
     }
 

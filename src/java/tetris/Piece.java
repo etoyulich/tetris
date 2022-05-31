@@ -13,7 +13,7 @@ public class Piece {
     }
 
     void setCell(@NotNull Cell cell) {
-        if (cell.isEmpty()) {
+        if (cell.isEmpty() || cell.getPiece() == this) {
             if (this.cell == null) {
                 this.cell = cell;
                 cell.setPiece(this);

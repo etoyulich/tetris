@@ -2,12 +2,10 @@ package tetris.view;
 
 import event.GameActionEvent;
 import event.GameActionListener;
-import event.ShapeActionEvent;
-import event.ShapeActionListener;
 import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.NotNull;
 import tetris.*;
-import tetris.Shape;
+import tetris.shapes.AbstractShape;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,27 +13,23 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.List;
-import java.util.Optional;
 
 
 public class GamePanel extends JFrame {
 
     private final GameModel game;
-    private final GlassView glassView;
     private final Timer timer;
 
     private final Font font = new Font("Rounded Mplus 1c Light", Font.PLAIN, 16);
     private final Color background = new Color(30, 29, 29);
     private final Color rightPanelBackground = new Color(48, 47, 47);
-    private final Color cellBackground = new Color(83, 78, 78, 255);
 
     private final JFrame gameOver = createGameOver();{
         gameOver.setDefaultCloseOperation(EXIT_ON_CLOSE);
         gameOver.setResizable(false);
     }
 
-    private final JPanel nextShapePanel = new GlassView(new Glass(5, 5), rightPanelBackground, rightPanelBackground);
+    private final JPanel nextShapePanel = new NextShapeView();
     private final JLabel pointsLabel = new JLabel("<html>Очки<br/><br/><pre> 0<pre/></html>", SwingConstants.CENTER);
     {
         pointsLabel.setFont(font);
@@ -83,7 +77,7 @@ public class GamePanel extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         //---------Создание стакана--------
-        glassView = new GlassView(game.getGlass(), background, cellBackground);
+        GlassView glassView = new GlassView(game.getGlass(), background);
         content.add(glassView);
 
         //---------Создание правой панели--------
@@ -99,7 +93,7 @@ public class GamePanel extends JFrame {
         JLabel nextShapeLabel = new JLabel("Следующая фигурка", SwingConstants.CENTER);
         nextShapeLabel.setFont(font);
         nextShapeLabel.setForeground(Color.WHITE);
-        nextShapePanel.add(nextShapeLabel);
+        nextShapePanel.add(nextShapeLabel, "center");
         nextShapePanel.add(this.nextShapePanel, "center");
 
         rightContent.add(nextShapePanel);
@@ -151,12 +145,6 @@ public class GamePanel extends JFrame {
         @Override
         public void scoresUpdated(@NotNull GameActionEvent event) {
             pointsLabel.setText("<html>Очки<br/><br/>" + game.getPoints() + "<br/><br/><br/></html>");
-
-        }
-
-        @Override
-        public void shapeIsUpdated(@NotNull GameActionEvent event, @NotNull Shape shape) {
-            shape.addShapeActionListener(new GamePanel.ShapeController());
         }
 
         @Override
@@ -167,26 +155,9 @@ public class GamePanel extends JFrame {
         }
 
         @Override
-        public void nextShapeUpdated(@NotNull GameActionEvent event, @NotNull Shape next) {
-            GlassView nextShape = (GlassView) nextShapePanel;
-            nextShape.drawNextShape(next);
-        }
-    }
-
-    private final class ShapeController implements ShapeActionListener {
-
-        @Override
-        public void cellsCleared(@NotNull ShapeActionEvent event, @NotNull List<Optional<Cell>> cells) {
-            for (Optional<Cell> cell : cells) {
-                cell.ifPresent(value -> glassView.changeCellColor(cellBackground, value));
-            }
-        }
-
-        @Override
-        public void cellsFilled(@NotNull ShapeActionEvent event, @NotNull List<Optional<Cell>> cells) {
-            for (Optional<Cell> cell : cells) {
-                cell.ifPresent(value -> glassView.changeCellColor(cell.get().getPiece().getColor(), value));
-            }
+        public void nextShapeUpdated(@NotNull GameActionEvent event, @NotNull AbstractShape next) {
+            ((NextShapeView) nextShapePanel).drawNextShape(next);
+            pack();
         }
     }
 
